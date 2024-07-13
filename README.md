@@ -1,6 +1,7 @@
 # B1SLayer
 
-[![B1SLayer](https://img.shields.io/nuget/v/B1SLayer.svg?maxAge=3600&label=B1SLayer)](https://www.nuget.org/packages/B1SLayer/)
+[![B1SLayer](https://img.shields.io/nuget/v/B1SLayer.svg)](https://www.nuget.org/packages/B1SLayer/)
+[![Downloads](https://img.shields.io/nuget/dt/B1SLayer.svg)](https://www.nuget.org/packages/B1SLayer/)
 
 A lightweight SAP Business One Service Layer client for .NET
 
@@ -11,11 +12,12 @@ B1SLayer aims to provide:
 
 ## How to use it
 
-Bellow a couple examples of what's possible (but not limited to) with B1SLayer:
+Firstly I highly recommend reading [my blog post on SAP Community](https://blogs.sap.com/2022/05/23/b1slayer-a-clean-and-easy-way-to-consume-sap-business-one-service-layer-with-.net/) where I go into more details, but here's a couple examples of what's possible (but not limited to) with B1SLayer:
 
 ````c#
 /* The connection object. All Service Layer requests and the session management are handled by this object
  * and therefore only one instance per company/user should be used across the entire application.
+ * If you want to connect to multiple databases or use different users, you will need multiple instances.
  * There's no need to manually Login! The session is managed automatically and renewed whenever necessary.
  */
 var serviceLayer = new SLConnection("https://sapserver:50000/b1s/v1", "CompanyDB", "manager", "12345");
@@ -44,8 +46,13 @@ var bpList = await serviceLayer.Request("BusinessPartners")
     .WithCaseInsensitive()
     .GetAsync<List<MyBusinessPartnerModel>>();
 
+// Performs a GET on /AlternateCatNum specifying the record through a composite primary key
+// The result is deserialized in a dynamic object
+var altCatNum = await serviceLayer
+    .Request("AlternateCatNum(ItemCode='A00001',CardCode='C00001',Substitute='BP01')").GetAsync();
+
 // Performs multiple GET requests on /Items until all entities in the database are obtained
-// The result is an IList of your custom model class
+// The result is an IList of your custom model class (unwrapped from the 'value' array)
 var allItemsList = await serviceLayer.Request("Items").Select("ItemCode").GetAllAsync<MyItemModel>();
 
 // Performs a POST on /Orders with the provided object as the JSON body, 
@@ -65,7 +72,8 @@ var attachmentEntry = await serviceLayer.PostAttachmentAsync(@"C:\files\myfile.p
 var req1 = new SLBatchRequest(
     HttpMethod.Post, // HTTP method
     "BusinessPartners", // resource
-    new { CardCode = "C00001", CardName = "I'm a new BP" }); // object to be sent as the JSON body
+    new { CardCode = "C00001", CardName = "I'm a new BP" }) // object to be sent as the JSON body
+    .WithReturnNoContent(); // Adds the header "Prefer: return-no-content" to the request
 
 var req2 = new SLBatchRequest(HttpMethod.Patch,
     "BusinessPartners('C00001')",
