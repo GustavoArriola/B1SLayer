@@ -321,6 +321,17 @@ namespace B1SLayer
         }
 
         /// <summary>
+        /// Performs a POST request with parameters and returns the result in a <see cref="string"/>.
+        /// </summary>
+        public async Task<string> PostReceiveStringAsync(object data)
+        {
+            return await _slConnection.ExecuteRequest(async () =>
+            {
+                return await FlurlRequest.WithCookies(_slConnection.Cookies).PostJsonAsync(data).ReceiveString();
+            });
+        }
+
+        /// <summary>
         /// Performs a POST request with the provided parameters.
         /// </summary>
         /// <param name="data">
